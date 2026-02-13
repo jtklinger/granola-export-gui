@@ -210,6 +210,10 @@ class ExportManager:
                         logger.error(f"✗ Export failed: {meeting_title}")
                         return result
 
+            except CancelledError:
+                # User cancelled — propagate immediately, no retries
+                raise
+
             except RateLimitError as e:
                 # Rate limit retries already exhausted in _call_tool — don't retry here
                 logger.error(f"Rate limit exhausted for meeting: {str(e)}")
