@@ -48,5 +48,8 @@ granola_exports/
 *.token
 .env
 
+# PyInstaller
+*.spec
+
 # Claude Code
 .claude/
