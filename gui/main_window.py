@@ -541,8 +541,8 @@ class GranolaExportApp:
 
         self.page.update()
 
-    def _mark_meeting_status(self, meeting_id: str, success: bool):
-        """Update a meeting row to show export result (green check or red X)"""
+    def _mark_meeting_status(self, meeting_id: str, success: bool, char_count: int = 0):
+        """Update a meeting row to show export result (green check or red X) and char count"""
         entry = self.meeting_rows.get(meeting_id)
         if not entry:
             return
@@ -557,6 +557,21 @@ class GranolaExportApp:
             icon.color = "red"
             checkbox.label_style = ft.TextStyle(color="red")
         icon.visible = True
+
+        # Append character count to the label
+        if char_count > 0:
+            char_color = "amber" if char_count < 10000 else "green"
+            label_base = checkbox.label
+            checkbox.label = f"{label_base} \u2014 {char_count:,} chars"
+            # Add a char count text next to the row
+            char_text = ft.Text(
+                f"{char_count:,} chars",
+                size=12,
+                color=char_color,
+                weight=ft.FontWeight.W_500,
+            )
+            entry['row'].controls.append(char_text)
+
         self.progress_display._push_update()
 
     def export_meetings(self, e):

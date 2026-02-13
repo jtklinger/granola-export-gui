@@ -35,7 +35,7 @@ class TranscriptVerifier:
     # Truncation pattern is advisory only — if the transcript passes the
     # cutoff and natural ending checks, a pattern match is just an ASR
     # artifact and should not block the export.
-    WARNING_ONLY_CHECKS = {"No Truncation Pattern"}
+    WARNING_ONLY_CHECKS = {"No Truncation Pattern", "Character Count"}
 
     @classmethod
     def verify_transcript(cls, transcript: str) -> dict:

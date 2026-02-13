@@ -145,7 +145,8 @@ class ExportManager:
             'complete': False,
             'filename': None,
             'error': None,
-            'verification': None
+            'verification': None,
+            'char_count': 0
         }
 
         logger.info(f"Exporting meeting: {meeting_title} ({meeting_id})")
@@ -163,6 +164,7 @@ class ExportManager:
 
                 # Fetch transcript
                 transcript = self.api_client.get_meeting_transcript(meeting_id)
+                result['char_count'] = len(transcript)
 
                 # Verify transcript
                 verification = self.verifier.verify_transcript(transcript)
@@ -286,11 +288,11 @@ class ExportManager:
             if result['complete']:
                 completed_meetings.append(result)
                 if result_callback:
-                    result_callback(meeting.get('id'), True)
+                    result_callback(meeting.get('id'), True, result.get('char_count', 0))
             else:
                 failed_meetings.append(result)
                 if result_callback:
-                    result_callback(meeting.get('id'), False)
+                    result_callback(meeting.get('id'), False, result.get('char_count', 0))
                 # Binary criteria: STOP on first failure
                 logger.error("Export FAILED: Binary success criteria not met")
                 break
