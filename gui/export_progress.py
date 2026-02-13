@@ -36,7 +36,7 @@ class ExportProgress:
         self.progress_bar = ft.ProgressBar(
             value=0,
             visible=False,
-            width=600
+            expand=True
         )
 
         # Status text
@@ -49,7 +49,7 @@ class ExportProgress:
         # Current meeting text
         self.current_meeting_text = ft.Text(
             "",
-            size=11,
+            size=12,
             color="grey700",
             visible=False
         )
@@ -58,7 +58,7 @@ class ExportProgress:
         self.rate_limit_text = ft.Text(
             "",
             size=12,
-            color="orange",
+            color="amber",
             visible=False
         )
 
@@ -75,7 +75,7 @@ class ExportProgress:
         # Verification status
         self.verification_text = ft.Text(
             "",
-            size=11,
+            size=12,
             visible=False
         )
 
@@ -195,13 +195,13 @@ class ExportProgress:
         """Show rate limit countdown with attempt info"""
         if seconds_remaining > 0:
             self.rate_limit_text.value = (
-                f"Rate limited by API — waiting {seconds_remaining}s "
+                f"⚠ Rate limited by API — waiting {seconds_remaining}s "
                 f"(attempt {attempt}/{max_attempts}, {total_wait}s backoff)"
             )
             self.rate_limit_text.visible = True
             self.cancel_button.visible = True
         else:
-            self.rate_limit_text.value = f"Retrying (attempt {attempt}/{max_attempts})..."
+            self.rate_limit_text.value = f"⚠ Retrying (attempt {attempt}/{max_attempts})..."
             self.rate_limit_text.visible = True
         self._push_update()
 
@@ -221,7 +221,7 @@ class ExportProgress:
     def hide_rate_limit(self):
         """Hide rate limit indicator and cancel button"""
         self.rate_limit_text.visible = False
-        self.rate_limit_text.color = "orange"
+        self.rate_limit_text.color = "amber"
         self.cancel_button.visible = False
         self.cancel_button.disabled = False
         self.cancel_button.text = "Cancel Export"

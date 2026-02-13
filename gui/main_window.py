@@ -114,19 +114,19 @@ class GranolaExportApp:
             [
                 header,
                 self.auth_screen.get_container(),
-                ft.Container(height=20),
+                ft.Container(height=24),
                 ft.Divider(height=1, color="grey300"),
                 ft.Container(height=16),
                 date_range_section,
-                ft.Container(height=20),
+                ft.Container(height=24),
                 export_location_section,
-                ft.Container(height=20),
+                ft.Container(height=24),
                 ft.Divider(height=1, color="grey300"),
                 ft.Container(height=16),
                 self.meeting_list_section,
-                ft.Container(height=20),
+                ft.Container(height=24),
                 self.action_buttons,
-                ft.Container(height=10),
+                ft.Container(height=8),
                 self.progress_display.get_container(),
             ],
             scroll=ft.ScrollMode.AUTO,
@@ -192,7 +192,7 @@ class GranolaExportApp:
                 ft.Row([self.start_date_button, self.start_date_label], spacing=10),
                 ft.Row([self.end_date_button, self.end_date_label], spacing=10),
             ],
-            spacing=6,
+            spacing=8,
             visible=False
         )
 
@@ -201,21 +201,23 @@ class GranolaExportApp:
             self.custom_date_row.visible = (self.date_range == "custom")
             self.page.update()
 
+        self.date_range_group = ft.RadioGroup(
+            value="last_30_days",
+            on_change=on_date_range_change,
+            content=ft.Column([
+                ft.Radio(value="last_week", label="Last 7 days"),
+                ft.Radio(value="last_30_days", label="Last 30 days (recommended)"),
+                ft.Radio(value="this_month", label="This month"),
+                ft.Radio(value="last_month", label="Last month"),
+                ft.Radio(value="this_year", label="This year"),
+                ft.Radio(value="last_year", label="Last year"),
+                ft.Radio(value="custom", label="Custom range"),
+            ], spacing=8)
+        )
+
         return ft.Column([
             ft.Text("Date Range", size=16, weight=ft.FontWeight.BOLD),
-            ft.RadioGroup(
-                value="last_30_days",
-                on_change=on_date_range_change,
-                content=ft.Column([
-                    ft.Radio(value="last_week", label="Last 7 days"),
-                    ft.Radio(value="last_30_days", label="Last 30 days (recommended)"),
-                    ft.Radio(value="this_month", label="This month"),
-                    ft.Radio(value="last_month", label="Last month"),
-                    ft.Radio(value="this_year", label="This year"),
-                    ft.Radio(value="last_year", label="Last year"),
-                    ft.Radio(value="custom", label="Custom range"),
-                ], spacing=4)
-            ),
+            self.date_range_group,
             self.custom_date_row,
         ], spacing=8)
 
@@ -226,7 +228,8 @@ class GranolaExportApp:
             size=12,
             color="grey700",
             overflow=ft.TextOverflow.ELLIPSIS,
-            expand=True
+            expand=True,
+            tooltip=self.export_path
         )
 
         def pick_folder(e):
@@ -242,12 +245,15 @@ class GranolaExportApp:
             if folder:
                 self.export_path = folder
                 self.location_text.value = folder
+                self.location_text.tooltip = folder
                 self.page.update()
+
+        self.browse_button = ft.TextButton("Browse...", on_click=pick_folder)
 
         return ft.Column([
             ft.Row([
                 ft.Text("Export Location", size=16, weight=ft.FontWeight.BOLD),
-                ft.TextButton("Browse...", on_click=pick_folder),
+                self.browse_button,
             ]),
             ft.Container(
                 content=self.location_text,
@@ -269,17 +275,20 @@ class GranolaExportApp:
             scroll=ft.ScrollMode.AUTO
         )
 
+        self.select_all_button = ft.TextButton(
+            "Select All",
+            on_click=lambda e: self.select_all_meetings(True)
+        )
+        self.deselect_all_button = ft.TextButton(
+            "Deselect All",
+            on_click=lambda e: self.select_all_meetings(False)
+        )
+
         return ft.Column([
             ft.Row([
                 ft.Text("Meetings", size=16, weight=ft.FontWeight.BOLD),
-                ft.TextButton(
-                    "Select All",
-                    on_click=lambda e: self.select_all_meetings(True)
-                ),
-                ft.TextButton(
-                    "Deselect All",
-                    on_click=lambda e: self.select_all_meetings(False)
-                ),
+                self.select_all_button,
+                self.deselect_all_button,
             ], spacing=8),
             ft.Container(
                 content=self.meeting_list_container,
@@ -367,7 +376,7 @@ class GranolaExportApp:
 
             except Exception as e:
                 logger.error(f"Authentication failed: {str(e)}")
-                self.auth_screen.auth_status.value = f"Authentication failed: {str(e)}"
+                self.auth_screen.auth_status.value = f"Authentication failed: {self._friendly_error(e)}"
                 self.auth_screen.auth_status.color = "red"
                 self.auth_screen.login_button.disabled = False
                 self.page.update()
@@ -384,6 +393,28 @@ class GranolaExportApp:
         self.export_button.disabled = True
         self.page.update()
 
+    def _friendly_error(self, ex: Exception) -> str:
+        """Map common exceptions to user-friendly messages"""
+        msg = str(ex).lower()
+        if "rate limit" in msg:
+            return "Rate limited by Granola API. Please wait a few minutes and try again."
+        if "connection" in msg or "timeout" in msg:
+            return "Could not connect to Granola. Check your internet connection."
+        if "401" in msg or "unauthorized" in msg:
+            return "Authentication expired. Please log out and log back in."
+        raw = str(ex)
+        return raw[:150] if len(raw) > 150 else raw
+
+    def _set_controls_enabled(self, enabled: bool):
+        """Enable or disable interactive controls during fetch/export operations"""
+        disabled = not enabled
+        self.date_range_group.disabled = disabled
+        self.browse_button.disabled = disabled
+        self.select_all_button.disabled = disabled
+        self.deselect_all_button.disabled = disabled
+        for entry in getattr(self, 'meeting_rows', {}).values():
+            entry['checkbox'].disabled = disabled
+
     def _cancel_export(self):
         """Cancel the current export/fetch operation"""
         self.api_client.cancelled = True
@@ -399,9 +430,22 @@ class GranolaExportApp:
 
     def fetch_meetings(self, e):
         """Fetch meetings from Granola API"""
+        if self.date_range == "custom":
+            if not self.custom_start or not self.custom_end:
+                self.progress_display.status_text.value = "Please select both start and end dates"
+                self.progress_display.status_text.color = "red"
+                self.page.update()
+                return
+            if self.custom_start > self.custom_end:
+                self.progress_display.status_text.value = "Start date must be before end date"
+                self.progress_display.status_text.color = "red"
+                self.page.update()
+                return
+
         def fetch_thread():
             try:
                 self.api_client.cancelled = False
+                self._set_controls_enabled(False)
                 self.progress_display.start_fetch()
                 self.fetch_button.disabled = True
                 self.page.update()
@@ -431,11 +475,12 @@ class GranolaExportApp:
 
             except Exception as ex:
                 logger.error(f"Error fetching meetings: {str(ex)}")
-                self.progress_display.status_text.value = f"Error: {str(ex)}"
+                self.progress_display.status_text.value = self._friendly_error(ex)
                 self.progress_display.status_text.color = "red"
 
             finally:
                 self.progress_display.end_fetch()
+                self._set_controls_enabled(True)
                 self.fetch_button.disabled = False
                 self.page.update()
 
@@ -530,6 +575,7 @@ class GranolaExportApp:
         def export_thread():
             try:
                 self.api_client.cancelled = False
+                self._set_controls_enabled(False)
 
                 # Get selected meetings
                 selected = [m for m in self.meetings if m['id'] in self.selected_meetings]
@@ -572,12 +618,13 @@ class GranolaExportApp:
 
             except Exception as ex:
                 logger.error(f"Export error: {str(ex)}")
-                self.progress_display.status_text.value = f"Error: {str(ex)}"
+                self.progress_display.status_text.value = self._friendly_error(ex)
                 self.progress_display.status_text.color = "red"
                 self.page.update()
 
             finally:
                 self.is_exporting = False
+                self._set_controls_enabled(True)
                 self.fetch_button.disabled = False
                 self.export_button.disabled = False
                 self.page.update()
