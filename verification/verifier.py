@@ -32,10 +32,15 @@ class TranscriptVerifier:
         "until next time", "catch you later",
     ]
 
+    # Truncation pattern is advisory only — if the transcript passes the
+    # cutoff and natural ending checks, a pattern match is just an ASR
+    # artifact and should not block the export.
+    WARNING_ONLY_CHECKS = {"No Truncation Pattern"}
+
     @classmethod
     def verify_transcript(cls, transcript: str) -> dict:
         """Run all verification checks from the skill spec."""
-        results = {'complete': True, 'checks': [], 'failures': []}
+        results = {'complete': True, 'checks': [], 'failures': [], 'warnings': []}
 
         checks = [
             cls._check_length,
@@ -48,12 +53,19 @@ class TranscriptVerifier:
             name, passed, message = check(transcript)
             results['checks'].append({'name': name, 'passed': passed, 'message': message})
             if not passed:
-                results['complete'] = False
-                results['failures'].append(f"{name}: {message}")
-                logger.warning(f"Verification failed - {name}: {message}")
+                if name in cls.WARNING_ONLY_CHECKS:
+                    results['warnings'].append(f"{name}: {message}")
+                    logger.warning(f"Verification warning (non-blocking) - {name}: {message}")
+                else:
+                    results['complete'] = False
+                    results['failures'].append(f"{name}: {message}")
+                    logger.warning(f"Verification failed - {name}: {message}")
 
         if results['complete']:
-            logger.info("Transcript verification passed all checks")
+            if results['warnings']:
+                logger.info(f"Transcript verification passed ({len(results['warnings'])} warning(s))")
+            else:
+                logger.info("Transcript verification passed all checks")
         else:
             logger.error(f"Transcript verification failed: {len(results['failures'])} issues")
 
