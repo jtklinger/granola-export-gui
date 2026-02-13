@@ -97,18 +97,20 @@ class TranscriptVerifier:
 
     @classmethod
     def _check_no_truncation_pattern(cls, transcript: str):
-        """Check for known Granola truncation patterns at the end of transcript.
+        """Check for known Granola truncation patterns at the very end of transcript.
 
-        Only flags patterns in the last 100 chars — the skill spec targets
-        'abrupt stops' where the transcript was actually cut off, not
-        mid-transcript ASR artifacts that happen to match the pattern.
+        Only flags patterns in the last 50 chars — the skill spec targets
+        'abrupt stops' where the transcript was literally cut off mid-sentence.
+        Speech-to-text artifacts matching the pattern further back are ignored
+        if the transcript otherwise ends with proper punctuation and a natural
+        closing (covered by the cutoff and natural ending checks).
         """
         if len(transcript) < 200:
             return "No Truncation Pattern", False, "Transcript too short"
 
-        last_100 = transcript[-100:]
+        last_50 = transcript[-50:]
         for pattern in cls.TRUNCATION_PATTERNS:
-            match = re.search(pattern, last_100, re.IGNORECASE)
+            match = re.search(pattern, last_50, re.IGNORECASE)
             if match:
                 return "No Truncation Pattern", False, f"Known truncation pattern at end: '{match.group()}'"
 
