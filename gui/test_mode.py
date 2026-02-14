@@ -102,6 +102,7 @@ class MockExportManager:
 
     def __init__(self, api_client):
         self.api_client = api_client
+        self.on_cooldown = None
 
     def export_single_meeting(self, meeting, output_dir, max_retries=2):
         """Mock export single meeting"""
@@ -132,16 +133,18 @@ class MockExportManager:
 
         filepath.write_text(content, encoding='utf-8')
 
+        char_count = len(MOCK_TRANSCRIPT) if meeting['id'] != 'mock-001' else 25000
         return {
             'meeting_id': meeting['id'],
             'title': meeting['title'],
             'complete': True,
             'filename': filepath.name,
             'error': None,
-            'verification': {'complete': True, 'checks': [], 'failures': []}
+            'verification': {'complete': True, 'checks': [], 'failures': []},
+            'char_count': char_count
         }
 
-    def export_meetings(self, meetings, output_dir, progress_callback=None):
+    def export_meetings(self, meetings, output_dir, progress_callback=None, result_callback=None):
         """Mock export multiple meetings"""
         completed = []
 
@@ -151,6 +154,9 @@ class MockExportManager:
 
             result = self.export_single_meeting(meeting, output_dir)
             completed.append(result)
+
+            if result_callback:
+                result_callback(meeting['id'], result['complete'], result.get('char_count', 0))
 
         return {
             'success': True,
