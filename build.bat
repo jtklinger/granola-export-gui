@@ -5,8 +5,8 @@ echo.
 flet pack main.py ^
   --name "Granola Export" ^
   --product-name "Granola Export Tool" ^
-  --product-version "1.1.0" ^
-  --file-version "1.1.0.0" ^
+  --product-version "1.2.0" ^
+  --file-version "1.2.0.0" ^
   --file-description "Export Granola meeting transcripts with summaries and verification" ^
   --copyright "2026" ^
   --hidden-import keyring.backends ^
