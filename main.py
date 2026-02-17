@@ -16,21 +16,35 @@ sys.path.insert(0, str(project_root))
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Granola Export GUI')
 parser.add_argument('--test', action='store_true', help='Run in test mode with mock data')
+parser.add_argument('--debug', action='store_true', help='Enable debug-level logging')
 args = parser.parse_args()
 
 TEST_MODE = args.test
+DEBUG_MODE = args.debug
 
 from auth import OAuthManager, TokenManager
 from api import GranolaAPIClient
 from verification import ExportManager
 from gui import GranolaExportApp
 
-# Configure logging
+# Configure logging — always write to file, optionally verbose
+log_dir = Path.home() / "granola_exports"
+log_dir.mkdir(parents=True, exist_ok=True)
+log_file = log_dir / "granola_export.log"
+
+log_level = logging.DEBUG if DEBUG_MODE else logging.INFO
+log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=log_level,
+    format=log_format,
+    handlers=[
+        logging.FileHandler(log_file, encoding='utf-8'),
+        logging.StreamHandler(),
+    ]
 )
 logger = logging.getLogger(__name__)
+logger.info(f"Log file: {log_file}")
 
 
 def main(page: ft.Page):
@@ -77,7 +91,7 @@ def main(page: ft.Page):
             ft.Column([
                 ft.Text("Application Error", size=24, weight=ft.FontWeight.BOLD, color="red"),
                 ft.Text(f"Error: {str(e)}", size=14),
-                ft.Text("Please check the console for full error details.", size=12, color="grey600"),
+                ft.Text(f"See log file for details: {log_file}", size=12, color="grey600"),
             ])
         )
         page.update()
