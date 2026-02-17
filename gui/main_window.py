@@ -315,9 +315,50 @@ class GranolaExportApp:
             disabled=True  # Enable after fetching
         )
 
+        def on_verbose_change(e):
+            root = logging.getLogger()
+            if e.control.value:
+                root.setLevel(logging.DEBUG)
+                self.debug_checkbox.value = False
+                logger.info("Logging set to VERBOSE (DEBUG)")
+            else:
+                root.setLevel(logging.WARNING)
+                logger.info("Logging set to WARNING")
+            self.page.update()
+
+        def on_debug_change(e):
+            root = logging.getLogger()
+            if e.control.value:
+                root.setLevel(logging.DEBUG)
+                self.verbose_checkbox.value = False
+                for handler in root.handlers:
+                    handler.setLevel(logging.DEBUG)
+                logger.debug("Logging set to DEBUG (all messages)")
+            else:
+                root.setLevel(logging.INFO)
+                logger.info("Logging set to INFO")
+            self.page.update()
+
+        self.verbose_checkbox = ft.Checkbox(
+            label="Verbose",
+            value=False,
+            on_change=on_verbose_change,
+        )
+        self.debug_checkbox = ft.Checkbox(
+            label="Debug",
+            value=False,
+            on_change=on_debug_change,
+        )
+
         return ft.Row([
             self.fetch_button,
             self.export_button,
+            ft.Container(expand=True),
+            ft.Row([
+                ft.Icon(ft.Icons.BUG_REPORT, size=16, color="grey500"),
+                self.verbose_checkbox,
+                self.debug_checkbox,
+            ], spacing=4),
         ], spacing=10)
 
     def _extract_email_from_tokens(self, tokens: dict) -> str:
