@@ -11,6 +11,7 @@ from .auth_screen import AuthScreen
 from .export_progress import ExportProgress
 from auth.oauth_manager import decode_jwt_claims
 from api.client import CancelledError, RateLimitError
+from version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -354,11 +355,14 @@ class GranolaExportApp:
             self.fetch_button,
             self.export_button,
             ft.Container(expand=True),
-            ft.Row([
-                ft.Icon(ft.Icons.BUG_REPORT, size=16, color="grey500"),
-                self.verbose_checkbox,
-                self.debug_checkbox,
-            ], spacing=4),
+            ft.Column([
+                ft.Row([
+                    ft.Icon(ft.Icons.BUG_REPORT, size=16, color="grey500"),
+                    self.verbose_checkbox,
+                    self.debug_checkbox,
+                ], spacing=4),
+                ft.Text(f"v{__version__}", size=10, color="grey500", text_align=ft.TextAlign.RIGHT),
+            ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.END),
         ], spacing=10)
 
     def _extract_email_from_tokens(self, tokens: dict) -> str:
@@ -439,7 +443,9 @@ class GranolaExportApp:
         msg = str(ex).lower()
         if "rate limit" in msg:
             return "Rate limited by Granola API. Please wait a few minutes and try again."
-        if "connection" in msg or "timeout" in msg:
+        if "timeout" in msg:
+            return "Granola API timed out. Try a smaller date range or try again."
+        if "connection" in msg:
             return "Could not connect to Granola. Check your internet connection."
         if "401" in msg or "unauthorized" in msg:
             return "Authentication expired. Please log out and log back in."
