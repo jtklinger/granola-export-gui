@@ -90,7 +90,7 @@ class GranolaAPIClient:
         self._mcp_call('initialize', {
             'protocolVersion': '2025-03-26',
             'capabilities': {},
-            'clientInfo': {'name': 'granola-export-gui', 'version': '1.2.0'}
+            'clientInfo': {'name': 'granola-export-gui', 'version': '1.3.0'}
         })
         self._mcp_notify('notifications/initialized')
         self._mcp_initialized = True
