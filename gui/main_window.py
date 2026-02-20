@@ -350,10 +350,16 @@ class GranolaExportApp:
             value=False,
             on_change=on_debug_change,
         )
+        self.continue_on_failure_checkbox = ft.Checkbox(
+            label="Continue on failure",
+            value=False,
+            label_style=ft.TextStyle(size=12),
+        )
 
         return ft.Row([
             self.fetch_button,
             self.export_button,
+            self.continue_on_failure_checkbox,
             ft.Container(expand=True),
             ft.Column([
                 ft.Row([
@@ -658,7 +664,8 @@ class GranolaExportApp:
                     selected,
                     self.export_path,
                     progress_callback=progress_callback,
-                    result_callback=self._mark_meeting_status
+                    result_callback=self._mark_meeting_status,
+                    continue_on_failure=self.continue_on_failure_checkbox.value,
                 )
 
                 # Show results

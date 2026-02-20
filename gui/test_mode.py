@@ -144,7 +144,7 @@ class MockExportManager:
             'char_count': char_count
         }
 
-    def export_meetings(self, meetings, output_dir, progress_callback=None, result_callback=None):
+    def export_meetings(self, meetings, output_dir, progress_callback=None, result_callback=None, continue_on_failure=False):
         """Mock export multiple meetings"""
         completed = []
 

@@ -238,7 +238,8 @@ class ExportManager:
         meetings: List[Dict],
         output_dir: str,
         progress_callback=None,
-        result_callback=None
+        result_callback=None,
+        continue_on_failure: bool = False
     ) -> Dict[str, any]:
         """
         Export multiple meetings with binary success criteria
@@ -293,9 +294,11 @@ class ExportManager:
                 failed_meetings.append(result)
                 if result_callback:
                     result_callback(meeting.get('id'), False, result.get('char_count', 0))
-                # Binary criteria: STOP on first failure
-                logger.error("Export FAILED: Binary success criteria not met")
-                break
+                if not continue_on_failure:
+                    logger.error("Export FAILED: Binary success criteria not met")
+                    break
+                else:
+                    logger.warning("Meeting failed but continuing (continue_on_failure=True)")
 
         # Binary success criteria
         success = len(failed_meetings) == 0
